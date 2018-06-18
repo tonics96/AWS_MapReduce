@@ -1,68 +1,65 @@
-
 import boto3
 import botocore
+import sys
 import json
+import os
 import time
 
-ACCESS_KEY='AKIAIB5G5CSABVQSLAIA'
-SECRET_KEY='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'
-BUCKET_NAME='toni3.mapreduce'
-     
-fitxer = 0
-n_mappers = 0
 
-while ((fitxer != '1') and (fitxer != '2') and (fitxer != '3')):
-    fitxer = raw_input('\nQuin fitxer vols:\n1- Sherlock Holmes\n2- El Quijote\n3- The Bible\n')
+ACCESS_KEY=''
+SECRET_KEY=''
+BUCKET_NAME=''
+PATH='/home/milax/Desktop/SD_AWS/'
+FILE=sys.argv[1]
+num_mappers=int(sys.argv[2])
 
-if(fitxer == '1'):
-    file = 'big.txt'
-if(fitxer == '2'):
-    file = 'pg2000.txt'
-if(fitxer == '3'):
-    file = 'pg10.txt'
 
-#Estatico en un principio
-n_mappers = 3
+if num_mappers > 5:
+	print "\nNo pueden haber mas de 5 mappers.\n"
+	sys.exit(0)
 
-payload3 = dict()
-payload3['key1'] = file
-payload3['key2'] = n_mappers
+
+if num_mappers < 1:
+	print "\nNo pueden haber menos de 1 mappers.\n"
+	sys.exit(0)
+
+
+os.system("mkdir -p "+PATH)
+
+
+payload3=dict()
+payload3["key1"]=FILE
+
 
 s3=boto3.client('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
-client=boto3.client('lambda', region_name="eu-central-1", aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
-
-i = 0
-nWords = 0
-f = open(file, 'r')
-for line in f:
-	words = line.split(' ')
-	for word in words:
-		nWords += 1
 
 
-payload3['key4'] = 0
-payload3['key5'] = nWords/3-1
-payload3['key6'] = nWords/3
-payload3['key7'] = (nWords/3)*2
-payload3['key8'] = (nWords/3)*2+1
-payload3['key9'] = nWords
+client = boto3.client('lambda', region_name="eu-central-1", aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
 
-while (i<n_mappers):
-	i += 1
-	print i, n_mappers
-	payload3['key3'] = i
+
+for i in range(0,n):
+	''' Cada mapper tendra el fichero que tiene que leer y el identificador de mapper. '''
+	payload3["key2"]=i
 	client.invoke(
-		FunctionName="mapper2",
+		FunctionName="mapper",
 		InvocationType='Event',
 		Payload=json.dumps(payload3)
 	)
-	
-time.sleep(30)
+
+
+time.sleep(20)
+
+
+payload3={
+	"key1":num_mappers
+}
+
 
 response=client.invoke(
 	FunctionName="reducer",
 	InvocationType='RequestResponse',
 	Payload=json.dumps(payload3)
 )
+
 
 print response['Payload'].read()
